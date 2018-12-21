@@ -1,0 +1,42 @@
+<?php
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+* Unpin element
+*/
+function unpin_article($node) {
+    if (
+        $node->bundle() === "article" &&
+        $node->hasField('sticky') &&
+        $node->get('sticky')->value === 1
+    ) {
+        // Select de tous les articles épinglés
+        $query = \Drupal::entityQuery('node');
+        $query->condition('nid', $node->id(), '<>');
+        $query->condition('type', 'article');
+        $query->condition('status', 1);
+        $idsToUnpin = $query->execute();
+
+        if (count($idsToUnpin) > 0) {
+            $old_nodes =  \Drupal\node\Entity\Node::loadMultiple($idsToUnpin);
+            foreach ($old_nodes as $node) {
+                $node->setSticky(false);
+                $node->save();
+            }
+        }
+    }
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function pin_article_node_insert($node) {
+   unpin_article($node);
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function pin_article_node_update($node) {
+   unpin_article($node);
+}
